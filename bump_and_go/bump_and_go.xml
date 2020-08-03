@@ -1,0 +1,149 @@
+<?xml version="1.0" ?>
+<VisualStates>
+  <config type="0">
+    <interfaces>
+      <interface>
+        <serverType>ice</serverType>
+        <name>myMotors</name>
+        <topic></topic>
+        <proxyName>Motors</proxyName>
+        <ip>localhost</ip>
+        <port>9001</port>
+        <interfaceName>Motors</interfaceName>
+      </interface>
+      <interface>
+        <serverType>ice</serverType>
+        <name>myLaser</name>
+        <topic></topic>
+        <proxyName>Laser</proxyName>
+        <ip>localhost</ip>
+        <port>9001</port>
+        <interfaceName>Laser</interfaceName>
+      </interface>
+      <interface>
+        <serverType>ice</serverType>
+        <name>myPose</name>
+        <topic></topic>
+        <proxyName>Pose3D</proxyName>
+        <ip>localhost</ip>
+        <port>9001</port>
+        <interfaceName>Pose3d</interfaceName>
+      </interface>
+    </interfaces>
+  </config>
+  <libraries>
+    <library>random</library>
+    <library>time</library>
+    <library>math</library>
+  </libraries>
+  <state id="0" initial="True">
+    <posx>0.0</posx>
+    <posy>0.0</posy>
+    <name>root</name>
+    <code></code>
+    <functions>def calculate_obstacle(self):
+	threshold_value = 0.4
+	laserData = self.myLaser.getLaserData()
+	for val in laserData.values:
+		if val &lt; threshold_value:
+			self.is_obstacle = True
+			return
+	self.is_obstacle = False
+	
+def calculate_random_angle(self):
+	self.randang = 0.0174533*random.randrange(-180, 180, 1) #degrees to radians
+	
+def complete_spin(self):
+	rot = self.myPose.getPose3d().yaw
+	print(rot)
+	new_yaw = rot + self.randang
+	print &quot;new yaw = &quot;, new_yaw
+	if new_yaw &gt; math.pi:
+		new_yaw = (new_yaw-math.pi)-math.pi
+	elif new_yaw &lt; -math.pi:
+		new_yaw = 2*math.pi + new_yaw
+	print &quot;new yaw corrected = &quot;, new_yaw
+	time.sleep(1)
+	if new_yaw &lt; rot:
+		print(&quot;turnig right&quot;)
+		while rot &gt; new_yaw:
+			self.myMotors.sendW(-0.2) #rad/seg
+			rot = self.myPose.getPose3d().yaw
+			print(rot)
+	else:
+		print(&quot;turnig left&quot;)
+		while rot &lt; new_yaw:
+			self.myMotors.sendW(0.2) #rad/seg
+			rot = self.myPose.getPose3d().yaw
+			print(rot)
+	self.turned = True</functions>
+    <variables>self.is_obstacle = False
+self.randang = 0
+self.turned = False</variables>
+    <timestep>100</timestep>
+    <state id="1" initial="True">
+      <posx>845.0</posx>
+      <posy>970.0</posy>
+      <name>Go Straight</name>
+      <code>self.interfaces.myMotors.sendV(0.8)
+self.interfaces.myMotors.sendW(0)
+self.interfaces.turned = False
+self.interfaces.randang = 0</code>
+      <functions></functions>
+      <variables></variables>
+      <timestep>100</timestep>
+      <transition id="3">
+        <type>1</type>
+        <condition>self.interfaces.calculate_obstacle()
+return self.interfaces.is_obstacle</condition>
+        <posx>892.0</posx>
+        <posy>904.5</posy>
+        <name>obstacle</name>
+        <originid>1</originid>
+        <destinationid>3</destinationid>
+        <code></code>
+      </transition>
+    </state>
+    <state id="2" initial="False">
+      <posx>1024.0</posx>
+      <posy>980.0</posy>
+      <name>Spin</name>
+      <code>self.interfaces.calculate_random_angle()
+self.interfaces.myMotors.sendV(0)
+self.interfaces.complete_spin()</code>
+      <functions></functions>
+      <variables></variables>
+      <timestep>100</timestep>
+      <transition id="2">
+        <type>1</type>
+        <condition>return self.interfaces.turned</condition>
+        <posx>927.0</posx>
+        <posy>1056.0</posy>
+        <name>turned</name>
+        <originid>2</originid>
+        <destinationid>1</destinationid>
+        <code></code>
+      </transition>
+    </state>
+    <state id="3" initial="False">
+      <posx>948.0</posx>
+      <posy>823.0</posy>
+      <name>Go Back</name>
+      <code>self.interfaces.myMotors.sendV(-0.4)
+self.interfaces.myMotors.sendW(0)</code>
+      <functions></functions>
+      <variables></variables>
+      <timestep>100</timestep>
+      <transition id="4">
+        <type>0</type>
+        <time>1000</time>
+        <posx>983.0</posx>
+        <posy>903.0</posy>
+        <name>1 sec</name>
+        <originid>3</originid>
+        <destinationid>2</destinationid>
+        <code></code>
+      </transition>
+    </state>
+  </state>
+</VisualStates>
